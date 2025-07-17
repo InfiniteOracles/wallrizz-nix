@@ -4,25 +4,55 @@ A Nix package for [WallRizz](https://github.com/5hubham5ingh/WallRizz) - a termi
 
 ## Installation
 
-### Using Nix Flakes
+### Using Nix Flakes (Add to your system flake)
 
-Add to your `flake.nix`:
+Add to your system `flake.nix`:
 
 ```nix
 {
   inputs = {
-    # ... your other inputs
-    wallrizz.url = "github:YOUR_USERNAME/wallrizz-nix";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    wallrizz.url = "github:InfiniteOracles/wallrizz-nix";
   };
   
   outputs = { self, nixpkgs, wallrizz, ... }: {
-    # In your system configuration
-    nixosConfigurations.your-host = nixpkgs.lib.nixosSystem {
-      # ... your config
+    nixosConfigurations.your-hostname = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
       modules = [
+        ./configuration.nix
         {
           environment.systemPackages = with pkgs; [
-            wallrizz.packages.${system}.default
+            wallrizz.packages.${pkgs.system}.default
+          ];
+        }
+      ];
+    };
+  };
+}
+```
+
+### Alternative: As an overlay (if you prefer)
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    wallrizz.url = "github:InfiniteOracles/wallrizz-nix";
+  };
+  
+  outputs = { self, nixpkgs, wallrizz, ... }: {
+    nixosConfigurations.your-hostname = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [
+        ./configuration.nix
+        {
+          nixpkgs.overlays = [
+            (final: prev: {
+              wallrizz = wallrizz.packages.${prev.system}.default;
+            })
+          ];
+          environment.systemPackages = with pkgs; [
+            wallrizz  # Now available as a regular package
           ];
         }
       ];
